@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<project name="jogdl" default="dist" basedir=".">
+
+	<property name="src" location="src"/>
+	<property name="bin" location="bin"/>
+	<property name="lib" location="lib"/>
+	<property name="dist" location="dist"/>
+	<property name="pkgdist" location="${dist}/ogdl.jar"/>
+	<property name="res" location="res"/>
+	<property name="tests" location="tests"/>
+	<property name="testbin" location="testbin"/>
+
+	<path id="build.classpath">
+		<fileset dir="${lib}" includes="**/*.jar"/>
+		<pathelement path="${bin}"/>
+	</path>
+
+	<target name="init">
+		<mkdir dir="${bin}"/>
+		<mkdir dir="${testbin}"/>
+		<mkdir dir="${dist}/lib"/>
+	</target>
+
+	<target name="compile" depends="init" description="compile the source">
+		<javac srcdir="${src}" destdir="${bin}" debug="on" includeantruntime="no"
+				classpathref="build.classpath">
+			<compilerarg value="-Xlint:unchecked"/>
+			<compilerarg value="-Xlint:deprecation"/>
+		</javac>
+	</target>
+
+	<target name="compile-tests" depends="compile" description="compile the testsuite">
+		<javac srcdir="${tests}" destdir="${testbin}" debug="on" includeantruntime="no"
+				classpathref="build.classpath">
+			<compilerarg value="-Xlint:unchecked"/>
+			<compilerarg value="-Xlint:deprecation"/>
+		</javac>
+	</target>
+
+	<target name="dist" depends="compile" description="generate the distribution">
+		<copy todir="${bin}">
+			<fileset dir="${res}">
+				<filename name="**/*"/>
+			</fileset>
+		</copy>
+		<jar jarfile="${pkgdist}" basedir="${bin}"/>
+		<copy todir="${dist}/lib">
+			<fileset dir="${lib}">
+				<filename name="**/*.jar"/>
+				<exclude name="**/junit*.jar"/>
+				<exclude name="**/hamcrest*.jar"/>
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="test" depends="compile-tests" description="run testsuite">
+		<junit haltonfailure="yes">
+			<classpath>
+				<fileset dir="${lib}" includes="**/*.jar"/>
+				<pathelement path="${bin}"/>
+				<pathelement path="${testbin}"/>
+			</classpath>
+			<formatter type="plain" usefile="false"/>
+			<batchtest>
+				<fileset dir="${tests}">
+					<include name="**/*Tests.java"/>
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+	<target name="clean" description="clean up">
+		<delete dir="${bin}"/>
+		<delete dir="${testbin}"/>
+		<delete dir="${dist}"/>
+	</target>
+
+</project>

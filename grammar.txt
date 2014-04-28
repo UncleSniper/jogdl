@@ -1,0 +1,14 @@
+utterance		::= constant* value
+constant		::= CONSTANT '=' value
+value			::= INT | FLOAT | STRING | CONSTANT | object
+valuelist		::= value (',' value)*
+object			::= type construction? '{' property* '}'
+type			::= qname ('<' typelist? '>')? '*'*
+typelist		::= type (',' type)*
+qname			::= NAME ('.' NAME)*
+construction	::= '(' valuelist? ')'
+property		::= NAME '=' (value | list | map)
+list			::= '[' valuelist? ']'
+map				::= '{' bindinglist? '}'
+bindinglist		::= binding (',' binding)*
+binding			::= value '->' value
