@@ -10,13 +10,13 @@ public class Accessor {
 		PUTTER;
 	}
 
-	private Property property;
+	private final Property property;
 
-	private Method method;
+	private final Method method;
 
-	private Class<?> keyType;
+	private final Class<?> keyType;
 
-	private Class<?> valueType;
+	private final Class<?> valueType;
 
 	public Accessor(Property property, Method method, Class<?> valueType) {
 		this(property, method, null, valueType);
