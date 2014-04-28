@@ -3,6 +3,7 @@ package org.unclesniper.ogdl;
 import java.util.Map;
 import java.util.HashMap;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Constructor;
 
 public class ClassInfo {
@@ -31,6 +32,9 @@ public class ClassInfo {
 	private void buildProperties() {
 		for(Class<?> c = clazz; c != null; c = c.getSuperclass()) {
 			for(Method m : c.getDeclaredMethods()) {
+				int mods = m.getModifiers();
+				if(!Modifier.isPublic(mods) || Modifier.isStatic(mods))
+					continue;
 				String name = m.getName();
 				Class<?>[] params = m.getParameterTypes();
 				boolean set = name.startsWith("set");
