@@ -89,7 +89,7 @@ public class ClassInfo {
 					}
 				}
 			}
-			if(matches && better < worse) {
+			if(matches && better <= worse) {
 				bestCtor = c;
 				bestParams = params;
 			}
