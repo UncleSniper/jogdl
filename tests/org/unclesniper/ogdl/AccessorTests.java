@@ -29,6 +29,15 @@ public class AccessorTests {
 	}
 
 	@Test
+	public void unaryAccessorCtorGivenNull() {
+		Accessor a = new Accessor(null, null, null);
+		assertNull("property", a.getProperty());
+		assertNull("method", a.getMethod());
+		assertNull("key type", a.getKeyType());
+		assertNull("value type", a.getValueType());
+	}
+
+	@Test
 	public void binaryAccessorCtor() {
 		Property prop = new Property(null, null);
 		Accessor a = new Accessor(prop, AccessorTests.someMethod, Float.class, Double.class);
@@ -36,6 +45,15 @@ public class AccessorTests {
 		assertSame("method", AccessorTests.someMethod, a.getMethod());
 		assertSame("key type", Float.class, a.getKeyType());
 		assertSame("value type", Double.class, a.getValueType());
+	}
+
+	@Test
+	public void binaryAccessorCtorGivenNull() {
+		Accessor a = new Accessor(null, null, null, null);
+		assertNull("property", a.getProperty());
+		assertNull("method", a.getMethod());
+		assertNull("key type", a.getKeyType());
+		assertNull("value type", a.getValueType());
 	}
 
 }
