@@ -8,6 +8,8 @@ public class ClassRegistry {
 	private Map<Class<?>, ClassInfo> classes = new HashMap<Class<?>, ClassInfo>();
 
 	public ClassInfo forClass(Class<?> clazz) {
+		if(clazz == null)
+			return null;
 		synchronized(classes) {
 			ClassInfo info = classes.get(clazz);
 			if(info == null) {
