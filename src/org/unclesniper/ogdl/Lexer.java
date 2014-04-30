@@ -1,5 +1,8 @@
 package org.unclesniper.ogdl;
 
+import java.io.Reader;
+import java.io.IOException;
+
 public class Lexer implements Location {
 
 	private enum State {
@@ -344,6 +347,15 @@ public class Lexer implements Location {
 				throw new AssertionError("Unrecognized lexer state: " + state.name());
 		}
 		sink.feedToken(new Token(file, line, null, null));
+	}
+
+	public void pushStream(Reader stream) throws IOException, LexicalException, SyntaxException,
+			ObjectConstructionException {
+		char[] buffer = new char[512];
+		int count;
+		while((count = stream.read(buffer)) > -1)
+			pushChars(buffer, 0, count);
+		endInput();
 	}
 
 	public static String formatLocation(String file, int line) {

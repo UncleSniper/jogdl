@@ -10,7 +10,7 @@ import java.util.LinkedList;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class BeanObjectBuilder implements ObjectBuilder {
+public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 
 	private enum State {
 		DEFINE_CONSTANT,
@@ -190,6 +190,18 @@ public class BeanObjectBuilder implements ObjectBuilder {
 
 	public Object getRootObject() {
 		return root;
+	}
+
+	public Iterable<String> getNamedObjects() {
+		return constants.keySet();
+	}
+
+	public boolean hasNamedObject(String name) {
+		return constants.containsKey(name);
+	}
+
+	public Object getNamedObject(String name) {
+		return constants.get(name);
 	}
 
 	public void defineConstant(String name, Location location) {
