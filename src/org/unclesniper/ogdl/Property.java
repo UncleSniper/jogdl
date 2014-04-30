@@ -73,27 +73,25 @@ public class Property {
 	private static Accessor findAccessorForValues(Set<Accessor> accessors, Object key, Object value) {
 		Accessor bestAccessor = null;
 		Class<?> bestKeyParam = null, bestValueParam = null;
+		Class<?> keyType = key == null ? null : key.getClass();
+		Class<?> valueType = value == null ? null : value.getClass();
 		for(Accessor a : accessors) {
 			Class<?> keyParam = a.getKeyType(), valueParam = a.getValueType();
 			boolean better = true;
-			Class<?> keyType, valueType;
 			if(keyParam == null) {
-				valueType = value == null ? null : value.getClass();
-				if(valueType == null ? keyParam.isPrimitive() : !keyParam.isAssignableFrom(valueType))
+				if(valueType == null ? valueParam.isPrimitive() : !valueParam.isAssignableFrom(valueType))
 					continue;
 				if(bestValueParam != null) {
-					boolean fromBest = keyParam.isAssignableFrom(bestValueParam);
-					boolean fromThis = bestValueParam.isAssignableFrom(keyParam);
+					boolean fromBest = valueParam.isAssignableFrom(bestValueParam);
+					boolean fromThis = bestValueParam.isAssignableFrom(valueParam);
 					better = fromThis && !fromBest;
 				}
 				if(better) {
 					bestAccessor = a;
-					bestValueParam = keyParam;
+					bestValueParam = valueParam;
 				}
 			}
 			else {
-				keyType = key == null ? null : key.getClass();
-				valueType = value == null ? null : value.getClass();
 				if(keyType == null ? keyParam.isPrimitive() : !keyParam.isAssignableFrom(keyType))
 					continue;
 				if(valueType == null ? valueParam.isPrimitive() : !valueParam.isAssignableFrom(valueType))
@@ -101,15 +99,15 @@ public class Property {
 				if(bestKeyParam != null) {
 					boolean keyFromBest = keyParam.isAssignableFrom(bestKeyParam);
 					boolean keyFromThis = bestKeyParam.isAssignableFrom(keyParam);
-					if(keyFromBest)
-						better = keyFromThis;
-					else if(!keyFromThis)
-						better = false;
-					else {
+					if(keyFromThis && !keyFromBest)
+						better = true;
+					else if(keyFromThis == keyFromBest) {
 						boolean valueFromBest = valueParam.isAssignableFrom(bestValueParam);
 						boolean valueFromThis = bestValueParam.isAssignableFrom(valueParam);
 						better = valueFromThis && !valueFromBest;
 					}
+					else
+						better = false;
 				}
 				if(better) {
 					bestAccessor = a;
@@ -130,7 +128,7 @@ public class Property {
 			return name;
 		char c = name.charAt(index);
 		if(c < 'A' || c > 'Z')
-			return name;
+			return name.substring(index);
 		return (char)(c - 'A' + 'a') + name.substring(index + 1);
 	}
 

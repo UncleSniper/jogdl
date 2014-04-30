@@ -45,4 +45,12 @@ public class Accessor {
 		return valueType;
 	}
 
+	public String toString() {
+		String name = property == null ? null : property.getName();
+		return "<accessor(" + (name == null ? "?" : name) + "): "
+				+ (method == null ? "?" : method.getName()) + ": "
+				+ (keyType == null ? "?" : keyType.getName()) + " -> "
+				+ (valueType == null ? "?" : valueType.getName()) + ">";
+	}
+
 }
