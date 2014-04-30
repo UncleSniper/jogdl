@@ -323,6 +323,27 @@ public class ClassInfoTests {
 	}
 
 	@Test
+	public void forNullClass() {
+		ClassInfo info = new ClassInfo(null);
+		assertNull("subject class", info.getSubject());
+		TestUtils.assertSetEquals("property name", new String[0], info.getPropertyNames());
+	}
+
+	@Test
+	public void getNonexistentProperty() {
+		ClassInfo info = new ClassInfo(VariousAccessors.class);
+		assertEquals("subject class", VariousAccessors.class, info.getSubject());
+		assertNull("property", info.getProperty("nonexistent"));
+	}
+
+	@Test
+	public void getNullProperty() {
+		ClassInfo info = new ClassInfo(VariousAccessors.class);
+		assertEquals("subject class", VariousAccessors.class, info.getSubject());
+		assertNull("property", info.getProperty(null));
+	}
+
+	@Test
 	public void findConstructor() {
 		ClassInfo info = new ClassInfo(VariousConstructors.class);
 		assertEquals("subject class", VariousConstructors.class, info.getSubject());
@@ -361,6 +382,15 @@ public class ClassInfoTests {
 		ctor = info.findConstructorForArguments(new Object[] {new Sub(), new Sub()});
 		assertNotNull("binary sub/sub ctor", ctor);
 		assertEquals("binary sub/sub ctor", VariousConstructors.c_Sub_Super, ctor);
+	}
+
+	@Test
+	public void findConstructorForNullArguments() {
+		ClassInfo info = new ClassInfo(VariousConstructors.class);
+		assertEquals("subject class", VariousConstructors.class, info.getSubject());
+		Constructor<?> ctor = info.findConstructorForArguments(null);
+		assertNotNull("nilary ctor found", ctor);
+		assertEquals("nilary ctor", VariousConstructors.c_nil, ctor);
 	}
 
 }

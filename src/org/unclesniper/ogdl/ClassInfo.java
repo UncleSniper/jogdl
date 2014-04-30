@@ -62,6 +62,8 @@ public class ClassInfo {
 	}
 
 	public Constructor<?> findConstructorForArguments(Object[] args) {
+		if(args == null)
+			args = new Object[0];
 		Constructor bestCtor = null;
 		Class<?>[] bestParams = null;
 		for(Constructor c : clazz.getConstructors()) {
