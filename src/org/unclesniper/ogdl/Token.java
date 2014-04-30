@@ -87,6 +87,30 @@ public class Token implements Location {
 		return Lexer.formatLocation(file, line);
 	}
 
+	public boolean equals(Object obj) {
+		if(!(obj instanceof Token))
+			return false;
+		Token t = (Token)obj;
+		return
+				(file == null ? t.file == null : file.equals(t.file))
+				&& (line <= 0 ? t.line <= 0 : line == t.line)
+				&& type == t.type
+				&& (text == null ? t.text == null : text.equals(t.text));
+	}
+
+	public int hashCode() {
+		return
+				(((file == null ? 0 : file.hashCode()) * 13
+				+ (line <= 0 ? 0 : line)) * 13
+				+ (type == null ? -1 : type.ordinal())) * 13
+				+ (text == null ? 0 : text.hashCode());
+	}
+
+	public String toString() {
+		return "<token(" + (type == null ? "<end>" : type.name().toLowerCase()) + ") '" + text
+				+ "' at " + formatLocation() + '>';
+	}
+
 	public static String escapeString(String value) {
 		StringBuilder build = new StringBuilder();
 		int length = value.length();

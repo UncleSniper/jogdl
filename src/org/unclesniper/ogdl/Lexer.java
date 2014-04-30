@@ -63,6 +63,10 @@ public class Lexer implements Location {
 		this.sink = sink;
 	}
 
+	public void pushChars(String data) throws LexicalException, SyntaxException, ObjectConstructionException {
+		pushChars(data.toCharArray(), 0, data.length());
+	}
+
 	public void pushChars(char[] data) throws LexicalException, SyntaxException, ObjectConstructionException {
 		pushChars(data, 0, data.length);
 	}
@@ -129,6 +133,13 @@ public class Lexer implements Location {
 						case '$':
 							buffer = new StringBuilder();
 							state = State.DOLLAR;
+							break;
+						case '\n':
+							++line;
+						case ' ':
+						case '\t':
+						case '\f':
+						case '\r':
 							break;
 						default:
 							if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
