@@ -145,7 +145,7 @@ public class Parser implements TokenSink {
 						states.addLast(State.TYPE_AFTER_PARAMETERS);
 						break;
 					default:
-						throw new SyntaxException(Token.MASK_DOT | Token.MASK_LESS | Token.MASK_STAR, token);
+						feedToken(token);
 				}
 				break;
 			case TYPE_AFTER_DOT:
