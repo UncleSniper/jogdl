@@ -101,6 +101,12 @@ public class Parser implements TokenSink {
 					case CONSTANT:
 						builder.referenceConstant(token.getText(), token);
 						break;
+					case TRUE:
+						builder.newBoolean(true, token);
+						break;
+					case FALSE:
+						builder.newBoolean(false, token);
+						break;
 					case NAME:
 						{
 							TypeSpecifier tspec = new TypeSpecifier(token);

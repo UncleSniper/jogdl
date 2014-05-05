@@ -48,6 +48,8 @@ public class SyntaxException extends ObjectDescriptionException {
 		"'*'",
 		"'('",
 		"')'",
+		"'true'",
+		"'false'",
 	};
 
 	private static String renderExpectedMask(int mask) {

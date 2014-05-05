@@ -10,6 +10,8 @@ public interface ObjectBuilder {
 
 	void newString(String value, Location location) throws ObjectConstructionException;
 
+	void newBoolean(boolean value, Location location) throws ObjectConstructionException;
+
 	void referenceConstant(String name, Location location) throws ObjectConstructionException;
 
 	void newObject(TypeSpecifier type) throws ObjectConstructionException;

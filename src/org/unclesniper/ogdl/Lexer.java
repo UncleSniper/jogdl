@@ -310,6 +310,12 @@ public class Lexer implements Location {
 		state = State.NONE;
 		String text = buffer.toString();
 		buffer = null;
+		if(type == Token.Type.NAME) {
+			if(text.equals("true"))
+				type = Token.Type.TRUE;
+			else if(text.equals("false"))
+				type = Token.Type.FALSE;
+		}
 		sink.feedToken(new Token(file, line, type, text));
 	}
 

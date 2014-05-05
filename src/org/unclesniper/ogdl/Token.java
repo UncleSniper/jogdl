@@ -21,7 +21,9 @@ public class Token implements Location {
 		ARROW,
 		STAR,
 		LEFT_ROUND,
-		RIGHT_ROUND;
+		RIGHT_ROUND,
+		TRUE,
+		FALSE;
 
 		public boolean isOneOf(int mask) {
 			return ((1 << ordinal()) & mask) != 0;
@@ -29,26 +31,29 @@ public class Token implements Location {
 
 	}
 
-	public static final int MASK_NAME         = 0000001;
-	public static final int MASK_DOT          = 0000002;
-	public static final int MASK_LESS         = 0000004;
-	public static final int MASK_GREATER      = 0000010;
-	public static final int MASK_LEFT_CURLY   = 0000020;
-	public static final int MASK_RIGHT_CURLY  = 0000040;
-	public static final int MASK_LEFT_SQUARE  = 0000100;
-	public static final int MASK_RIGHT_SQUARE = 0000200;
-	public static final int MASK_COMMA        = 0000400;
-	public static final int MASK_EQUAL        = 0001000;
-	public static final int MASK_STRING       = 0002000;
-	public static final int MASK_INT          = 0004000;
-	public static final int MASK_FLOAT        = 0010000;
-	public static final int MASK_CONSTANT     = 0020000;
-	public static final int MASK_ARROW        = 0040000;
-	public static final int MASK_STAR         = 0100000;
-	public static final int MASK_LEFT_ROUND   = 0200000;
-	public static final int MASK_RIGHT_ROUND  = 0400000;
+	public static final int MASK_NAME         = 00000001;
+	public static final int MASK_DOT          = 00000002;
+	public static final int MASK_LESS         = 00000004;
+	public static final int MASK_GREATER      = 00000010;
+	public static final int MASK_LEFT_CURLY   = 00000020;
+	public static final int MASK_RIGHT_CURLY  = 00000040;
+	public static final int MASK_LEFT_SQUARE  = 00000100;
+	public static final int MASK_RIGHT_SQUARE = 00000200;
+	public static final int MASK_COMMA        = 00000400;
+	public static final int MASK_EQUAL        = 00001000;
+	public static final int MASK_STRING       = 00002000;
+	public static final int MASK_INT          = 00004000;
+	public static final int MASK_FLOAT        = 00010000;
+	public static final int MASK_CONSTANT     = 00020000;
+	public static final int MASK_ARROW        = 00040000;
+	public static final int MASK_STAR         = 00100000;
+	public static final int MASK_LEFT_ROUND   = 00200000;
+	public static final int MASK_RIGHT_ROUND  = 00400000;
+	public static final int MASK_TRUE         = 01000000;
+	public static final int MASK_FALSE        = 02000000;
 
-	public static final int MASK_VALUE        = MASK_INT | MASK_FLOAT | MASK_STRING | MASK_CONSTANT | MASK_NAME;
+	public static final int MASK_VALUE        = MASK_INT | MASK_FLOAT | MASK_STRING | MASK_TRUE | MASK_FALSE
+	                                            | MASK_CONSTANT | MASK_NAME;
 
 	private static final char[] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
 

@@ -151,6 +151,17 @@ public class ObjectWriter implements ObjectBuilder {
 		}
 	}
 
+	public void newBoolean(boolean value, Location location) throws ObjectSerializationIOException {
+		try {
+			ensureState(State.BEFORE_VALUE);
+			stream.print(value ? "true" : "false");
+			finishObject(location);
+		}
+		catch(IOException ioe) {
+			throw new ObjectSerializationIOException(ioe.getMessage(), location, ioe);
+		}
+	}
+
 	public void referenceConstant(String name, Location location) throws ObjectSerializationIOException {
 		try {
 			ensureState(State.BEFORE_VALUE);

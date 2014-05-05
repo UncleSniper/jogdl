@@ -231,6 +231,10 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 		popObject(value, location);
 	}
 
+	public void newBoolean(boolean value, Location location) throws ObjectConstructionException {
+		popObject(value, location);
+	}
+
 	public void referenceConstant(String name, Location location) throws ObjectConstructionException {
 		if(constants.containsKey(name)) {
 			popObject(constants.get(name), location);
