@@ -395,7 +395,7 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 		Object key = access == Accessor.Type.PUTTER ? objects.removeLast() : null;
 		Object base = objects.getLast();
 		Property prop = properties.removeLast();
-		BeanObjectBuilder.dispatchAccessor(access, base, prop, key, objects, location);
+		BeanObjectBuilder.dispatchAccessor(access, base, prop, key, object, location);
 	}
 
 	private static void dispatchAccessor(Accessor.Type access, Object base, Property property,
