@@ -287,7 +287,7 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 		ClassLoader ld = loader == null ? BeanObjectBuilder.class.getClassLoader() : loader;
 		Class<?> clazz;
 		try {
-			clazz = loader.loadClass(type.getName());
+			clazz = ld.loadClass(type.getName());
 		}
 		catch(ClassNotFoundException cnfe) {
 			throw new ObjectCreationException(type.getName(), type.getLocation(), cnfe);
