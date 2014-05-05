@@ -61,8 +61,8 @@ public class SyntaxException extends ObjectDescriptionException {
 					first = false;
 				else
 					build.append(", ");
+				build.append(SyntaxException.RENDITIONS[i]);
 			}
-			build.append(SyntaxException.RENDITIONS[i]);
 		}
 		return build.toString();
 	}
