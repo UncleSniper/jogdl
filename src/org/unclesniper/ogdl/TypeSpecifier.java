@@ -17,6 +17,10 @@ public class TypeSpecifier {
 		this.location = location;
 	}
 
+	public TypeSpecifier(String qname) {
+		name = new StringBuilder(qname);
+	}
+
 	public Location getLocation() {
 		return location;
 	}
