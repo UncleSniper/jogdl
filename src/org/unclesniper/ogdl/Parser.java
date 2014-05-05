@@ -291,7 +291,7 @@ public class Parser implements TokenSink {
 						states.addLast(State.EMPTY_MAP);
 						break;
 					default:
-						if(type.isOneOf(Token.MASK_VALUE))
+						if(!type.isOneOf(Token.MASK_VALUE))
 							throw new SyntaxException(Token.MASK_VALUE | Token.MASK_LEFT_SQUARE
 									| Token.MASK_LEFT_CURLY, token);
 						builder.setProperty(names.getLast(), token);
