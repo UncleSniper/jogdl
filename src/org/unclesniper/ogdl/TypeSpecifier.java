@@ -37,6 +37,35 @@ public class TypeSpecifier {
 		return name == null ? null : name.toString();
 	}
 
+	public String getJavaneseName() {
+		if(name == null)
+			return null;
+		boolean lastWasClass = false;
+		int old = 0, pos;
+		String n = name.toString();
+		StringBuilder j = null;
+		while((pos = n.indexOf('.', old)) > -1) {
+			if(pos > old) {
+				if(j == null)
+					j = new StringBuilder();
+				else
+					j.append(lastWasClass ? '$' : '.');
+				j.append(n.substring(old, pos));
+				char c = n.charAt(old);
+				lastWasClass = c >= 'A' && c <= 'Z';
+			}
+			pos = old + 1;
+		}
+		if(old < n.length()) {
+			if(j == null)
+				j = new StringBuilder();
+			else
+				j.append(lastWasClass ? '$' : '.');
+			j.append(n.substring(old));
+		}
+		return j == null ? null : j.toString();
+	}
+
 	public void addTypeParameter(TypeSpecifier parameter) {
 		if(parameters == null)
 			parameters = new LinkedList<TypeSpecifier>();
