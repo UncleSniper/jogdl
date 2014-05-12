@@ -1,5 +1,6 @@
 package org.unclesniper.ogdl;
 
+import java.net.URL;
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
@@ -7,10 +8,12 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.net.URLClassLoader;
+import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
+public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, CoalescingLibraryManager {
 
 	private enum State {
 		DEFINE_CONSTANT,
@@ -79,22 +82,23 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 
 		private Object value;
 
-		BindingResolver(Object base, Property property, Location location) {
+		private final AccessorDispatchInfo info;
+
+		BindingResolver(Object base, Property property, Location location, AccessorDispatchInfo info) {
 			super(base, property, location);
+			this.info = info;
 		}
 
 		void setKey(Object key) throws PropertyInjectionException {
 			this.key = key;
 			if((have |= BindingResolver.HAVE_KEY) == BindingResolver.HAVE_BOTH)
-				BeanObjectBuilder.dispatchAccessor(Accessor.Type.PUTTER, base, property, key, value, location,
-						null, null);
+				BeanObjectBuilder.dispatchAccessor(Accessor.Type.PUTTER, base, property, key, value, location, info);
 		}
 
 		void setValue(Object value) throws PropertyInjectionException {
 			this.value = value;
 			if((have |= BindingResolver.HAVE_VALUE) == BindingResolver.HAVE_BOTH)
-				BeanObjectBuilder.dispatchAccessor(Accessor.Type.PUTTER, base, property, key, value, location,
-						null, null);
+				BeanObjectBuilder.dispatchAccessor(Accessor.Type.PUTTER, base, property, key, value, location, info);
 		}
 
 	}
@@ -131,26 +135,41 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 
 		private final Accessor.Type access;
 
-		private final Iterable<StringClassMapper> stringClassMappers;
-
-		private final ClassLoader loader;
+		private final AccessorDispatchInfo info;
 
 		AccessorResolver(Accessor.Type access, Object base, Property property, Location location,
-				Iterable<StringClassMapper> stringClassMappers, ClassLoader loader) {
+				AccessorDispatchInfo info) {
 			super(base, property, location);
 			this.access = access;
-			this.stringClassMappers = stringClassMappers;
-			this.loader = loader;
+			this.info = info;
 		}
 
 		public void setPendingObject(Object object) throws PropertyInjectionException {
-			BeanObjectBuilder.dispatchAccessor(access, base, property, null, object, location,
-					stringClassMappers, loader);
+			BeanObjectBuilder.dispatchAccessor(access, base, property, null, object, location, info);
+		}
+
+	}
+
+	private static class AccessorDispatchInfo {
+
+		final Iterable<StringClassMapper> stringClassMappers;
+
+		final ClassLoader loader;
+
+		final CoalescingLibraryManager libraryManager;
+
+		AccessorDispatchInfo(Iterable<StringClassMapper> stringClassMappers, ClassLoader loader,
+				CoalescingLibraryManager libraryManager) {
+			this.stringClassMappers = stringClassMappers;
+			this.loader = loader;
+			this.libraryManager = libraryManager;
 		}
 
 	}
 
 	private static final Object[] OBJECT_ARRAY_TEMPLATE = new Object[0];
+
+	private static final URL[] URL_ARRAY_TEMPLATE = new URL[0];
 
 	private ClassRegistry classes;
 
@@ -179,6 +198,12 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 	private Deque<BindingResolver> bindingResolvers = new LinkedList<BindingResolver>();
 
 	private Set<StringClassMapper> stringClassMappers = new HashSet<StringClassMapper>();
+
+	private List<URL> coalescingLibraries;
+
+	private boolean coalescingLoaderTainted;
+
+	private ClassLoader coalescingLoader;
 
 	public BeanObjectBuilder(ClassRegistry classes) {
 		this.classes = classes;
@@ -227,6 +252,25 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 
 	public Object getNamedObject(String name) {
 		return constants.get(name);
+	}
+
+	public void addCoalescingLibrary(URL library) {
+		if(library != null) {
+			if(coalescingLibraries == null)
+				coalescingLibraries = new LinkedList<URL>();
+			coalescingLibraries.add(library);
+			coalescingLoaderTainted = true;
+		}
+	}
+
+	public ClassLoader getCoalescingLoader() {
+		ClassLoader parent = loader == null ? BeanObjectBuilder.class.getClassLoader() : loader;
+		if(coalescingLoaderTainted) {
+			URL[] urls = coalescingLibraries.toArray(BeanObjectBuilder.URL_ARRAY_TEMPLATE);
+			coalescingLoader = new URLClassLoader(urls, parent);
+			return coalescingLoader;
+		}
+		return coalescingLoader == null ? parent : coalescingLoader;
 	}
 
 	public void defineConstant(String name, Location location) {
@@ -281,23 +325,25 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 				throw new UndefinedConstantException(name, location);
 			case SET_VALUE:
 				resolutions.add(new PendingResolution(name, new AccessorResolver(Accessor.Type.SETTER,
-						objects.getLast(), properties.removeLast(), location, stringClassMappers, loader),
-						location));
+						objects.getLast(), properties.removeLast(), location,
+						new AccessorDispatchInfo(stringClassMappers, getCoalescingLoader(), this)), location));
 				break;
 			case ADD_VALUE:
 				resolutions.add(new PendingResolution(name, new AccessorResolver(Accessor.Type.ADDER,
-						objects.getLast(), properties.removeLast(), location, stringClassMappers, loader),
-						location));
+						objects.getLast(), properties.removeLast(), location,
+						new AccessorDispatchInfo(stringClassMappers, getCoalescingLoader(), this)), location));
 				break;
 			case PUT_KEY:
-				resolver = new BindingResolver(objects.getLast(), properties.removeLast(), location);
+				resolver = new BindingResolver(objects.getLast(), properties.removeLast(), location,
+						new AccessorDispatchInfo(stringClassMappers, getCoalescingLoader(), this));
 				resolutions.add(new PendingResolution(name, new BindingKeyResolver(resolver), location));
 				bindingResolvers.addLast(resolver);
 				states.addLast(State.PUT_VALUE_FOR_PENDING_KEY);
 				break;
 			case PUT_VALUE:
 				key = objects.removeLast();
-				resolver = new BindingResolver(objects.getLast(), properties.removeLast(), location);
+				resolver = new BindingResolver(objects.getLast(), properties.removeLast(), location,
+						new AccessorDispatchInfo(stringClassMappers, getCoalescingLoader(), this));
 				resolutions.add(new PendingResolution(name, new BindingValueResolver(resolver), location));
 				resolver.setKey(key);
 				break;
@@ -311,10 +357,9 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 	}
 
 	public void newObject(TypeSpecifier type) throws ObjectCreationException {
-		ClassLoader ld = loader == null ? BeanObjectBuilder.class.getClassLoader() : loader;
 		Class<?> clazz;
 		try {
-			clazz = ld.loadClass(type.getJavaneseName());
+			clazz = getCoalescingLoader().loadClass(type.getJavaneseName());
 		}
 		catch(ClassNotFoundException cnfe) {
 			throw new ObjectCreationException(type.getName(), type.getLocation(), cnfe);
@@ -379,7 +424,11 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 	}
 
 	public void endObject(Location location) throws ObjectConstructionException {
-		popObject(objects.removeLast(), location);
+		Object obj = objects.removeLast();
+		getCoalescingLoader();
+		if(coalescingLoader != null)
+			injectCoalescingLoader(obj, location);
+		popObject(obj, location);
 	}
 
 	private void popObject(Object object, Location location) throws ObjectConstructionException {
@@ -426,12 +475,13 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 		Object key = access == Accessor.Type.PUTTER ? objects.removeLast() : null;
 		Object base = objects.getLast();
 		Property prop = properties.removeLast();
-		BeanObjectBuilder.dispatchAccessor(access, base, prop, key, object, location, stringClassMappers, loader);
+		BeanObjectBuilder.dispatchAccessor(access, base, prop, key, object, location,
+				new AccessorDispatchInfo(stringClassMappers, getCoalescingLoader(), this));
 	}
 
 	private static void dispatchAccessor(Accessor.Type access, Object base, Property property,
-			Object key, Object value, Location location, Iterable<StringClassMapper> stringClassMappers,
-			ClassLoader loader) throws PropertyInjectionException {
+			Object key, Object value, Location location, AccessorDispatchInfo info)
+			throws PropertyInjectionException {
 		Accessor a;
 		switch(access) {
 			case SETTER:
@@ -451,32 +501,54 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 			String specifier = (String)value;
 			switch(access) {
 				case SETTER:
-					ma = property.findMappingSetterForValue(specifier, stringClassMappers, loader);
+					ma = property.findMappingSetterForValue(specifier, info.stringClassMappers, info.loader);
 					break;
 				case ADDER:
-					ma = property.findMappingAdderForValue(specifier, stringClassMappers, loader);
+					ma = property.findMappingAdderForValue(specifier, info.stringClassMappers, info.loader);
 					break;
 			}
 			if(ma != null) {
 				a = ma.accessor;
-				value = ma.mapper.deserializeObject(specifier, a.getValueType(), loader);
+				value = ma.mapper.deserializeObject(specifier, a.getValueType(), info.loader);
 			}
 		}
 		if(a == null)
 			throw new PropertyInjectionException(base.getClass(), property.getName(),
 					"Class '" + base.getClass().getName() + "' does not exhibit a " + access.name().toLowerCase()
 					+ " for property '" + property.getName() + '\'', location);
+		Method method = a.getMethod();
 		try {
 			if(access == Accessor.Type.PUTTER)
-				a.getMethod().invoke(base, key, value);
+				method.invoke(base, key, value);
 			else
-				a.getMethod().invoke(base, value);
+				method.invoke(base, value);
 		}
 		catch(IllegalAccessException iae) {
 			throw new PropertyInjectionException(base.getClass(), property.getName(), location, iae);
 		}
 		catch(InvocationTargetException ite) {
 			throw new PropertyInjectionException(base.getClass(), property.getName(), location, ite);
+		}
+		if(access == Accessor.Type.ADDER && info.libraryManager != null && URL.class.equals(a.getValueType())
+				&& method.getAnnotation(CoalescingLibraryProperty.class) != null)
+			info.libraryManager.addCoalescingLibrary((URL)value);
+	}
+
+	private void injectCoalescingLoader(Object base, Location location) throws PropertyInjectionException {
+		ClassInfo info = classes.forClass(base.getClass());
+		Method setter = info.getCoalescingLoaderSetter();
+		if(setter == null)
+			return;
+		try {
+			setter.invoke(base, coalescingLoader);
+		}
+		catch(IllegalAccessException iae) {
+			throw new PropertyInjectionException(base.getClass(), info.getCoalescingLoaderPropertyName(),
+					location, iae);
+		}
+		catch(InvocationTargetException ite) {
+			throw new PropertyInjectionException(base.getClass(), info.getCoalescingLoaderPropertyName(),
+					location, ite);
 		}
 	}
 

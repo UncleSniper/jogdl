@@ -12,6 +12,10 @@ public class ClassInfo {
 
 	private Map<String, Property> properties = new HashMap<String, Property>();
 
+	private Method coalescingLoaderSetter;
+
+	private String coalescingLoaderPropertyName;
+
 	public ClassInfo(Class<?> clazz) {
 		this.clazz = clazz;
 		buildProperties();
@@ -27,6 +31,14 @@ public class ClassInfo {
 
 	public Iterable<String> getPropertyNames() {
 		return properties.keySet();
+	}
+
+	public Method getCoalescingLoaderSetter() {
+		return coalescingLoaderSetter;
+	}
+
+	public String getCoalescingLoaderPropertyName() {
+		return coalescingLoaderPropertyName;
 	}
 
 	private void buildProperties() {
@@ -50,8 +62,14 @@ public class ClassInfo {
 						prop = new Property(this, propName);
 						properties.put(propName, prop);
 					}
-					if(isSetter)
+					if(isSetter) {
 						prop.addSetter(new Accessor(prop, m, params[0]));
+						if(params[0].equals(ClassLoader.class)
+								&& m.getAnnotation(CoalescingLoaderProperty.class) != null) {
+							coalescingLoaderSetter = m;
+							coalescingLoaderPropertyName = propName;
+						}
+					}
 					else if(isAdder)
 						prop.addAdder(new Accessor(prop, m, params[0]));
 					else
