@@ -2,7 +2,9 @@ package org.unclesniper.ogdl;
 
 import java.net.URL;
 import java.io.File;
+import java.util.Set;
 import java.io.Reader;
+import java.util.HashSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileInputStream;
@@ -13,6 +15,8 @@ public class Injection {
 	private ClassRegistry classes;
 
 	private ClassLoader loader;
+
+	private Set<StringClassMapper> stringClassMappers = new HashSet<StringClassMapper>();
 
 	public Injection(ClassRegistry registry) {
 		classes = registry;
@@ -34,6 +38,24 @@ public class Injection {
 		this.loader = loader;
 	}
 
+	public Iterable<StringClassMapper> getStringClassMappers() {
+		return stringClassMappers;
+	}
+
+	public void addStringClassMapper(StringClassMapper mapper) {
+		if(mapper != null)
+			stringClassMappers.add(mapper);
+	}
+
+	public void removeStringClassMapper(StringClassMapper mapper) {
+		stringClassMappers.remove(mapper);
+	}
+
+	public void registerBuiltinStringClassMappers() {
+		addStringClassMapper(new EnumStringClassMapper());
+		addStringClassMapper(new ClassStringClassMapper());
+	}
+
 	public ObjectGraphDescriptor readDescription(Reader stream) throws IOException, ObjectDescriptionException {
 		return readDescription(stream, null);
 	}
@@ -42,6 +64,8 @@ public class Injection {
 			throws IOException, ObjectDescriptionException {
 		BeanObjectBuilder builder = new BeanObjectBuilder(classes);
 		builder.setConstructionClassLoader(loader);
+		for(StringClassMapper mapper : stringClassMappers)
+			builder.addStringClassMapper(mapper);
 		Parser parser = new Parser(builder);
 		Lexer lexer = new Lexer(parser);
 		lexer.setFile(file);

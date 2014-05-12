@@ -86,13 +86,15 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 		void setKey(Object key) throws PropertyInjectionException {
 			this.key = key;
 			if((have |= BindingResolver.HAVE_KEY) == BindingResolver.HAVE_BOTH)
-				BeanObjectBuilder.dispatchAccessor(Accessor.Type.PUTTER, base, property, key, value, location);
+				BeanObjectBuilder.dispatchAccessor(Accessor.Type.PUTTER, base, property, key, value, location,
+						null, null);
 		}
 
 		void setValue(Object value) throws PropertyInjectionException {
 			this.value = value;
 			if((have |= BindingResolver.HAVE_VALUE) == BindingResolver.HAVE_BOTH)
-				BeanObjectBuilder.dispatchAccessor(Accessor.Type.PUTTER, base, property, key, value, location);
+				BeanObjectBuilder.dispatchAccessor(Accessor.Type.PUTTER, base, property, key, value, location,
+						null, null);
 		}
 
 	}
@@ -129,13 +131,21 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 
 		private final Accessor.Type access;
 
-		AccessorResolver(Accessor.Type access, Object base, Property property, Location location) {
+		private final Iterable<StringClassMapper> stringClassMappers;
+
+		private final ClassLoader loader;
+
+		AccessorResolver(Accessor.Type access, Object base, Property property, Location location,
+				Iterable<StringClassMapper> stringClassMappers, ClassLoader loader) {
 			super(base, property, location);
 			this.access = access;
+			this.stringClassMappers = stringClassMappers;
+			this.loader = loader;
 		}
 
 		public void setPendingObject(Object object) throws PropertyInjectionException {
-			BeanObjectBuilder.dispatchAccessor(access, base, property, null, object, location);
+			BeanObjectBuilder.dispatchAccessor(access, base, property, null, object, location,
+					stringClassMappers, loader);
 		}
 
 	}
@@ -168,6 +178,8 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 
 	private Deque<BindingResolver> bindingResolvers = new LinkedList<BindingResolver>();
 
+	private Set<StringClassMapper> stringClassMappers = new HashSet<StringClassMapper>();
+
 	public BeanObjectBuilder(ClassRegistry classes) {
 		this.classes = classes;
 	}
@@ -186,6 +198,19 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 
 	public void setConstructionClassLoader(ClassLoader loader) {
 		this.loader = loader;
+	}
+
+	public Iterable<StringClassMapper> getStringClassMappers() {
+		return stringClassMappers;
+	}
+
+	public void addStringClassMapper(StringClassMapper mapper) {
+		if(mapper != null)
+			stringClassMappers.add(mapper);
+	}
+
+	public void removeStringClassMapper(StringClassMapper mapper) {
+		stringClassMappers.remove(mapper);
 	}
 
 	public Object getRootObject() {
@@ -256,11 +281,13 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 				throw new UndefinedConstantException(name, location);
 			case SET_VALUE:
 				resolutions.add(new PendingResolution(name, new AccessorResolver(Accessor.Type.SETTER,
-						objects.getLast(), properties.removeLast(), location), location));
+						objects.getLast(), properties.removeLast(), location, stringClassMappers, loader),
+						location));
 				break;
 			case ADD_VALUE:
 				resolutions.add(new PendingResolution(name, new AccessorResolver(Accessor.Type.ADDER,
-						objects.getLast(), properties.removeLast(), location), location));
+						objects.getLast(), properties.removeLast(), location, stringClassMappers, loader),
+						location));
 				break;
 			case PUT_KEY:
 				resolver = new BindingResolver(objects.getLast(), properties.removeLast(), location);
@@ -399,11 +426,12 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 		Object key = access == Accessor.Type.PUTTER ? objects.removeLast() : null;
 		Object base = objects.getLast();
 		Property prop = properties.removeLast();
-		BeanObjectBuilder.dispatchAccessor(access, base, prop, key, object, location);
+		BeanObjectBuilder.dispatchAccessor(access, base, prop, key, object, location, stringClassMappers, loader);
 	}
 
 	private static void dispatchAccessor(Accessor.Type access, Object base, Property property,
-			Object key, Object value, Location location) throws PropertyInjectionException {
+			Object key, Object value, Location location, Iterable<StringClassMapper> stringClassMappers,
+			ClassLoader loader) throws PropertyInjectionException {
 		Accessor a;
 		switch(access) {
 			case SETTER:
@@ -417,6 +445,22 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument {
 				break;
 			default:
 				throw new AssertionError("Unrecognized accessor type: " + access.name());
+		}
+		if(a == null && value != null && value.getClass().equals(String.class)) {
+			Property.MappingAccessor ma = null;
+			String specifier = (String)value;
+			switch(access) {
+				case SETTER:
+					ma = property.findMappingSetterForValue(specifier, stringClassMappers, loader);
+					break;
+				case ADDER:
+					ma = property.findMappingAdderForValue(specifier, stringClassMappers, loader);
+					break;
+			}
+			if(ma != null) {
+				a = ma.accessor;
+				value = ma.mapper.deserializeObject(specifier, a.getValueType(), loader);
+			}
 		}
 		if(a == null)
 			throw new PropertyInjectionException(base.getClass(), property.getName(),

@@ -5,6 +5,19 @@ import java.util.HashSet;
 
 public class Property {
 
+	public static class MappingAccessor {
+
+		public final Accessor accessor;
+
+		public final StringClassMapper mapper;
+
+		public MappingAccessor(Accessor accessor, StringClassMapper mapper) {
+			this.accessor = accessor;
+			this.mapper = mapper;
+		}
+
+	}
+
 	private ClassInfo clazz;
 
 	private String name;
@@ -117,6 +130,32 @@ public class Property {
 			}
 		}
 		return bestAccessor;
+	}
+
+	public MappingAccessor findMappingSetterForValue(String value,
+			Iterable<StringClassMapper> stringClassMappers, ClassLoader loader) {
+		return Property.findMappingAccessorForValue(setters, value, stringClassMappers, loader);
+	}
+
+	public MappingAccessor findMappingAdderForValue(String value,
+			Iterable<StringClassMapper> stringClassMappers, ClassLoader loader) {
+		return Property.findMappingAccessorForValue(adders, value, stringClassMappers, loader);
+	}
+
+	private static MappingAccessor findMappingAccessorForValue(Set<Accessor> accessors, String value,
+			Iterable<StringClassMapper> stringClassMappers, ClassLoader loader) {
+		MappingAccessor ma = null;
+		for(Accessor accessor : accessors) {
+			for(StringClassMapper mapper : stringClassMappers) {
+				if(mapper.canDeserializeObject(value, accessor.getValueType(), loader)) {
+					if(ma == null)
+						ma = new MappingAccessor(accessor, mapper);
+					else
+						return null;
+				}
+			}
+		}
+		return ma;
 	}
 
 	public static String minisculize(String name) {
