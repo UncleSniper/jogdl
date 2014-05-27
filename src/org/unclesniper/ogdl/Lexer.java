@@ -18,7 +18,11 @@ public class Lexer implements Location {
 		FLOAT,
 		STRING,
 		ESCAPE,
-		HEX_CODE;
+		HEX_CODE,
+		SLASH,
+		LINE_COMMENT,
+		BLOCK_COMMENT,
+		BLOCK_COMMENT_STAR;
 
 	}
 
@@ -136,6 +140,12 @@ public class Lexer implements Location {
 						case '$':
 							buffer = new StringBuilder();
 							state = State.DOLLAR;
+							break;
+						case '#':
+							state = State.LINE_COMMENT;
+							break;
+						case '/':
+							state = State.SLASH;
 							break;
 						case '\n':
 							++line;
@@ -293,6 +303,38 @@ public class Lexer implements Location {
 					if(digits >= 4) {
 						buffer.append((char)code);
 						state = State.STRING;
+					}
+					break;
+				case SLASH:
+					switch(c) {
+						case '/':
+							state = State.LINE_COMMENT;
+							break;
+						case '*':
+							state = State.BLOCK_COMMENT;
+							break;
+						default:
+							throw new LexicalException(c, "'/' or '*'", file, line);
+					}
+					break;
+				case LINE_COMMENT:
+					if(c == '\n')
+						state = State.NONE;
+					break;
+				case BLOCK_COMMENT:
+					if(c == '*')
+						state = State.BLOCK_COMMENT_STAR;
+					break;
+				case BLOCK_COMMENT_STAR:
+					switch(c) {
+						case '*':
+							break;
+						case '/':
+							state = State.NONE;
+							break;
+						default:
+							state = State.BLOCK_COMMENT;
+							break;
 					}
 					break;
 				default:
