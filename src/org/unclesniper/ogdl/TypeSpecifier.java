@@ -54,7 +54,7 @@ public class TypeSpecifier {
 				char c = n.charAt(old);
 				lastWasClass = c >= 'A' && c <= 'Z';
 			}
-			pos = old + 1;
+			old = pos + 1;
 		}
 		if(old < n.length()) {
 			if(j == null)
