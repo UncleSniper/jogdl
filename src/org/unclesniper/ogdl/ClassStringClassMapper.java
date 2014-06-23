@@ -16,6 +16,7 @@ public class ClassStringClassMapper implements StringClassMapper {
 		namedClasses.put("long", Long.TYPE);
 		namedClasses.put("float", Float.TYPE);
 		namedClasses.put("double", Double.TYPE);
+		namedClasses.put("boolean", Boolean.TYPE);
 	}
 
 	public boolean canDeserializeObject(String specifier, Class<?> desiredType, ClassLoader loader) {

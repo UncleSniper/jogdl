@@ -20,6 +20,7 @@ public class ClassUtils {
 		primitiveToCompound.put(Long.TYPE, Long.class);
 		primitiveToCompound.put(Float.TYPE, Float.class);
 		primitiveToCompound.put(Double.TYPE, Double.class);
+		primitiveToCompound.put(Boolean.TYPE, Boolean.class);
 		compoundToPrimitive = new HashMap<Class<?>, Class<?>>();
 		compoundToPrimitive.put(Byte.class, Byte.TYPE);
 		compoundToPrimitive.put(Character.class, Character.TYPE);
@@ -28,6 +29,7 @@ public class ClassUtils {
 		compoundToPrimitive.put(Long.class, Long.TYPE);
 		compoundToPrimitive.put(Float.class, Float.TYPE);
 		compoundToPrimitive.put(Double.class, Double.TYPE);
+		compoundToPrimitive.put(Boolean.class, Boolean.TYPE);
 	}
 
 	public static Class<?> getPrimitiveTypeOf(Class<?> clazz) {
