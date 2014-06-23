@@ -89,7 +89,8 @@ public class Property {
 		Class<?> keyType = key == null ? null : key.getClass();
 		Class<?> valueType = value == null ? null : value.getClass();
 		for(Accessor a : accessors) {
-			Class<?> keyParam = a.getKeyType(), valueParam = a.getValueType();
+			Class<?> keyParam = ClassUtils.getCompoundTypeOf(a.getKeyType());
+			Class<?> valueParam = ClassUtils.getCompoundTypeOf(a.getValueType());
 			boolean better = true;
 			if(keyParam == null) {
 				if(valueType == null ? valueParam.isPrimitive() : !valueParam.isAssignableFrom(valueType))
