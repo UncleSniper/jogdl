@@ -323,7 +323,7 @@ public class Parser implements TokenSink {
 					states.addLast(State.AFTER_PROPERTY);
 				else {
 					builder.addListElement(names.getLast(), token);
-					if(type.isOneOf(Token.MASK_VALUE))
+					if(!type.isOneOf(Token.MASK_VALUE))
 						throw new SyntaxException(Token.MASK_RIGHT_SQUARE | Token.MASK_VALUE, token);
 					states.addLast(State.AFTER_LIST_ELEMENT);
 					states.addLast(State.BEFORE_VALUE);
