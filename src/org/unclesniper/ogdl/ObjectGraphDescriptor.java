@@ -32,8 +32,19 @@ public class ObjectGraphDescriptor implements ObjectGraphDocument {
 		return name == null ? document.getRootObject() : document.getNamedObject(name);
 	}
 
+	public Iterable<Object> getCompoundObjects() {
+		return document.getCompoundObjects();
+	}
+
 	public <T> T getNamedObjectAs(String name, Class<T> desiredType) {
 		return desiredType.cast(getNamedObject(name));
+	}
+
+	public <Interface> void bindObjects(Class<Interface> clazz, ObjectBinder<Interface> binder) {
+		for(Object object : document.getCompoundObjects()) {
+			if(clazz.isInstance(object))
+				binder.bindInjectedObject(clazz.cast(object));
+		}
 	}
 
 }

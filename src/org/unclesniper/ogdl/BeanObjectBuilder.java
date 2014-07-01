@@ -205,6 +205,8 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 
 	private ClassLoader coalescingLoader;
 
+	private final List<Object> compoundObjects = new LinkedList<Object>();
+
 	public BeanObjectBuilder(ClassRegistry classes) {
 		this.classes = classes;
 	}
@@ -252,6 +254,10 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 
 	public Object getNamedObject(String name) {
 		return constants.get(name);
+	}
+
+	public Iterable<Object> getCompoundObjects() {
+		return compoundObjects;
 	}
 
 	public void addCoalescingLibrary(URL library) {
@@ -398,6 +404,7 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 					"Failed to instantiate class '" + type.getSubject().getName(), location, ite.getCause());
 		}
 		objects.addLast(obj);
+		compoundObjects.add(obj);
 	}
 
 	public void setProperty(String property, Location location) throws NoSuchPropertyException {

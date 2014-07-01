@@ -10,4 +10,6 @@ public interface ObjectGraphDocument {
 
 	Object getNamedObject(String name);
 
+	Iterable<Object> getCompoundObjects();
+
 }
