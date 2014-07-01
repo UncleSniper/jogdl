@@ -55,6 +55,7 @@ public class Injection {
 		addStringClassMapper(new EnumStringClassMapper());
 		addStringClassMapper(new ClassStringClassMapper());
 		addStringClassMapper(new URLStringClassMapper());
+		addStringClassMapper(new FileStringClassMapper());
 	}
 
 	public ObjectGraphDescriptor readDescription(Reader stream) throws IOException, ObjectDescriptionException {
