@@ -318,12 +318,20 @@ public class Lexer implements Location {
 					}
 					break;
 				case LINE_COMMENT:
-					if(c == '\n')
+					if(c == '\n') {
+						++line;
 						state = State.NONE;
+					}
 					break;
 				case BLOCK_COMMENT:
-					if(c == '*')
-						state = State.BLOCK_COMMENT_STAR;
+					switch(c) {
+						case '*':
+							state = State.BLOCK_COMMENT_STAR;
+							break;
+						case '\n':
+							++line;
+							break;
+					}
 					break;
 				case BLOCK_COMMENT_STAR:
 					switch(c) {
@@ -332,6 +340,8 @@ public class Lexer implements Location {
 						case '/':
 							state = State.NONE;
 							break;
+						case '\n':
+							++line;
 						default:
 							state = State.BLOCK_COMMENT;
 							break;
