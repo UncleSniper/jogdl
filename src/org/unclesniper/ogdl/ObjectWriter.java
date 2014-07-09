@@ -354,6 +354,7 @@ public class ObjectWriter implements ObjectBuilder {
 		catch(IOException ioe) {
 			throw new ObjectSerializationIOException(ioe.getMessage(), location, ioe);
 		}
+		properties.removeLast();
 	}
 
 }
