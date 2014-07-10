@@ -225,7 +225,7 @@ public class Parser implements TokenSink {
 					states.addLast(State.OBJECT_AFTER_ARGUMENTS);
 				}
 				else {
-					if(type.isOneOf(Token.MASK_VALUE))
+					if(!type.isOneOf(Token.MASK_VALUE))
 						throw new SyntaxException(Token.MASK_RIGHT_ROUND | Token.MASK_VALUE, token);
 					states.addLast(State.OBJECT_AFTER_ARGUMENT);
 					states.addLast(State.BEFORE_VALUE);
@@ -353,7 +353,7 @@ public class Parser implements TokenSink {
 					states.addLast(State.AFTER_PROPERTY);
 				else {
 					builder.addMapBinding(names.getLast(), token);
-					if(type.isOneOf(Token.MASK_VALUE))
+					if(!type.isOneOf(Token.MASK_VALUE))
 						throw new SyntaxException(Token.MASK_RIGHT_CURLY | Token.MASK_VALUE, token);
 					states.addLast(State.AFTER_MAP_KEY);
 					states.addLast(State.BEFORE_VALUE);
