@@ -141,9 +141,9 @@ public class ObjectWriter implements ObjectBuilder {
 	public void newString(String value, Location location) throws ObjectSerializationIOException {
 		try {
 			ensureState(State.BEFORE_VALUE);
-			stream.print('\'');
+			stream.print('"');
 			stream.print(Token.escapeString(value));
-			stream.print('\'');
+			stream.print('"');
 			finishObject(location);
 		}
 		catch(IOException ioe) {
