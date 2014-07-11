@@ -89,6 +89,7 @@ public class ObjectWriter implements ObjectBuilder {
 			case BEFORE_PROPERTY:
 			case AFTER_LIST_ELEMENT:
 			case AFTER_MAP_KEY:
+			case AFTER_MAP_VALUE:
 				break;
 			default:
 				throw new AssertionError("Unexpected state: " + states.getLast().name());
@@ -243,6 +244,7 @@ public class ObjectWriter implements ObjectBuilder {
 				else {
 					stream.println(',');
 					indent();
+					states.removeLast();
 					return false;
 				}
 			case AFTER_MAP_VALUE:
@@ -262,6 +264,7 @@ public class ObjectWriter implements ObjectBuilder {
 				else {
 					stream.println(',');
 					indent();
+					states.removeLast();
 					return false;
 				}
 			default:
