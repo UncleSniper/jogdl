@@ -92,7 +92,8 @@ public class ClassInfo {
 			int better = params.length, worse = params.length;
 			for(int i = 0; i < params.length; ++i) {
 				Class<?> argType = args[i] == null ? null : args[i].getClass();
-				if(argType == null ? params[i].isPrimitive() : !params[i].isAssignableFrom(argType)) {
+				if(argType == null ? params[i].isPrimitive()
+						: !ClassUtils.getCompoundTypeOf(params[i]).isAssignableFrom(argType)) {
 					matches = false;
 					break;
 				}
