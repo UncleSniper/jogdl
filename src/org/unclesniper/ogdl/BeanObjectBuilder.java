@@ -191,7 +191,7 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 
 	private Deque<Property> properties = new LinkedList<Property>();
 
-	private Set<PendingResolution> resolutions = new HashSet<PendingResolution>();
+	private List<PendingResolution> resolutions = new LinkedList<PendingResolution>();
 
 	private Map<String, ConstantInterdependency> constInterdeps = new HashMap<String, ConstantInterdependency>();
 
