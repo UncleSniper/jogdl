@@ -259,6 +259,10 @@ public class Lexer implements Location {
 							buffer.append('\\');
 							state = State.STRING;
 							break;
+						case '"':
+							buffer.append('"');
+							state = State.STRING;
+							break;
 						case 't':
 							buffer.append('\t');
 							state = State.STRING;
@@ -279,6 +283,8 @@ public class Lexer implements Location {
 							state = State.HEX_CODE;
 							digits = code = 0;
 							break;
+						default:
+							throw new LexicalException(c, "escape sequence", file, line);
 					}
 					break;
 				case HEX_CODE:
