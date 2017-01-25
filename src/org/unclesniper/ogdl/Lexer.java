@@ -219,6 +219,10 @@ public class Lexer implements Location {
 					}
 					else if(c >= '0' && c <= '9')
 						buffer.append(c);
+					else if(c == 'l') {
+						buffer.append(c);
+						pushToken(Token.Type.INT);
+					}
 					else {
 						--i;
 						pushToken(Token.Type.INT);
@@ -235,6 +239,10 @@ public class Lexer implements Location {
 				case FLOAT:
 					if(c >= '0' && c <= '9')
 						buffer.append(c);
+					else if(c == 'd') {
+						buffer.append(c);
+						pushToken(Token.Type.FLOAT);
+					}
 					else {
 						--i;
 						pushToken(Token.Type.FLOAT);

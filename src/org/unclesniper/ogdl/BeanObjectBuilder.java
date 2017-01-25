@@ -285,7 +285,13 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 	}
 
 	public void newInt(String value, Location location) throws ObjectConstructionException {
-		long l = Long.parseLong(value);
+		long l;
+		if(value.endsWith("l")) {
+			l = Long.parseLong(value.substring(0, value.length() - 1));
+			popObject(l, location);
+			return;
+		}
+		l = Long.parseLong(value);
 		int i = (int)l;
 		if((long)i == l)
 			popObject(i, location);
@@ -294,7 +300,13 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 	}
 
 	public void newFloat(String value, Location location) throws ObjectConstructionException {
-		double d = Double.parseDouble(value);
+		double d;
+		if(value.endsWith("d")) {
+			d = Double.parseDouble(value.substring(0, value.length() - 1));
+			popObject(d, location);
+			return;
+		}
+		d = Double.parseDouble(value);
 		float f = (float)d;
 		if((double)f == d)
 			popObject(f, location);
