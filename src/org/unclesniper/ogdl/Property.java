@@ -89,15 +89,18 @@ public class Property {
 		Class<?> keyType = key == null ? null : key.getClass();
 		Class<?> valueType = value == null ? null : value.getClass();
 		for(Accessor a : accessors) {
-			Class<?> keyParam = ClassUtils.getCompoundTypeOf(a.getKeyType());
-			Class<?> valueParam = ClassUtils.getCompoundTypeOf(a.getValueType());
+			Class<?> rawKeyParam = a.getKeyType();
+			Class<?> keyParam = ClassUtils.getCompoundTypeOf(rawKeyParam);
+			Class<?> rawValueParam = a.getValueType();
+			Class<?> valueParam = ClassUtils.getCompoundTypeOf(rawValueParam);
 			boolean better = true;
 			if(keyParam == null) {
-				if(valueType == null ? valueParam.isPrimitive() : !valueParam.isAssignableFrom(valueType))
+				if(valueType == null ? rawValueParam.isPrimitive()
+						: !ClassUtils.isExtendedAssignable(valueParam, valueType))
 					continue;
 				if(bestValueParam != null) {
-					boolean fromBest = valueParam.isAssignableFrom(bestValueParam);
-					boolean fromThis = bestValueParam.isAssignableFrom(valueParam);
+					boolean fromBest = ClassUtils.isExtendedAssignable(valueParam, bestValueParam);
+					boolean fromThis = ClassUtils.isExtendedAssignable(bestValueParam, valueParam);
 					better = fromThis && !fromBest;
 				}
 				if(better) {
@@ -106,18 +109,20 @@ public class Property {
 				}
 			}
 			else {
-				if(keyType == null ? keyParam.isPrimitive() : !keyParam.isAssignableFrom(keyType))
+				if(keyType == null ? rawKeyParam.isPrimitive()
+						: !ClassUtils.isExtendedAssignable(keyParam, keyType))
 					continue;
-				if(valueType == null ? valueParam.isPrimitive() : !valueParam.isAssignableFrom(valueType))
+				if(valueType == null ? rawValueParam.isPrimitive()
+						: !ClassUtils.isExtendedAssignable(valueParam, valueType))
 					continue;
 				if(bestKeyParam != null) {
-					boolean keyFromBest = keyParam.isAssignableFrom(bestKeyParam);
-					boolean keyFromThis = bestKeyParam.isAssignableFrom(keyParam);
+					boolean keyFromBest = ClassUtils.isExtendedAssignable(keyParam, bestKeyParam);
+					boolean keyFromThis = ClassUtils.isExtendedAssignable(bestKeyParam, keyParam);
 					if(keyFromThis && !keyFromBest)
 						better = true;
 					else if(keyFromThis == keyFromBest) {
-						boolean valueFromBest = valueParam.isAssignableFrom(bestValueParam);
-						boolean valueFromThis = bestValueParam.isAssignableFrom(valueParam);
+						boolean valueFromBest = ClassUtils.isExtendedAssignable(valueParam, bestValueParam);
+						boolean valueFromThis = ClassUtils.isExtendedAssignable(bestValueParam, valueParam);
 						better = valueFromThis && !valueFromBest;
 					}
 					else

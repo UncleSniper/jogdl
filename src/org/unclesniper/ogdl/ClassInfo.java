@@ -93,13 +93,13 @@ public class ClassInfo {
 			for(int i = 0; i < params.length; ++i) {
 				Class<?> argType = args[i] == null ? null : args[i].getClass();
 				if(argType == null ? params[i].isPrimitive()
-						: !ClassUtils.getCompoundTypeOf(params[i]).isAssignableFrom(argType)) {
+						: !ClassUtils.isExtendedAssignable(params[i], argType)) {
 					matches = false;
 					break;
 				}
 				if(bestParams != null) {
-					boolean fromBest = params[i].isAssignableFrom(bestParams[i]);
-					boolean fromThis = bestParams[i].isAssignableFrom(params[i]);
+					boolean fromBest = ClassUtils.isExtendedAssignable(params[i], bestParams[i]);
+					boolean fromThis = ClassUtils.isExtendedAssignable(bestParams[i], params[i]);
 					if(fromBest) {
 						if(!fromThis && i < worse)
 							worse = i;
