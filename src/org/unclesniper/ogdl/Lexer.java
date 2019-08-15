@@ -22,7 +22,8 @@ public class Lexer implements Location {
 		SLASH,
 		LINE_COMMENT,
 		BLOCK_COMMENT,
-		BLOCK_COMMENT_STAR;
+		BLOCK_COMMENT_STAR,
+		DIRECTIVE;
 
 	}
 
@@ -153,6 +154,10 @@ public class Lexer implements Location {
 						case '\t':
 						case '\f':
 						case '\r':
+							break;
+						case '%':
+							buffer = new StringBuilder("%");
+							state = State.DIRECTIVE;
 							break;
 						default:
 							if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
@@ -361,6 +366,20 @@ public class Lexer implements Location {
 							break;
 					}
 					break;
+				case DIRECTIVE:
+					{
+						int curlen = buffer.length();
+						if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+								|| (curlen > 2 && c >= '0' && c <= '9') || c == '_')
+							buffer.append(c);
+						else if(curlen == 0)
+							throw new LexicalException(c, "directive name", file, line);
+						else {
+							--i;
+							pushToken(Token.Type.DIRECTIVE);
+						}
+					}
+					break;
 				default:
 					throw new AssertionError("Unrecognized lexer state: " + state.name());
 			}
@@ -415,6 +434,11 @@ public class Lexer implements Location {
 				throw new LexicalException("Unexpected end of input, expected '\"'", file, line);
 			case ESCAPE:
 				throw new LexicalException("Unexpected end of input, expected escape sequence", file, line);
+			case DIRECTIVE:
+				if(buffer.length() == 1)
+					throw new LexicalException("Unexpected end of input, expected directive name", file, line);
+				pushToken(Token.Type.DIRECTIVE);
+				break;
 			default:
 				throw new AssertionError("Unrecognized lexer state: " + state.name());
 		}

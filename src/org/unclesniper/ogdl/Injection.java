@@ -4,9 +4,11 @@ import java.net.URL;
 import java.io.File;
 import java.util.Set;
 import java.io.Reader;
+import java.util.List;
 import java.util.HashSet;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedList;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 
@@ -17,6 +19,8 @@ public class Injection {
 	private ClassLoader loader;
 
 	private Set<StringClassMapper> stringClassMappers = new HashSet<StringClassMapper>();
+
+	private final List<TokenSinkWrapper> sinkWrappers = new LinkedList<TokenSinkWrapper>();
 
 	public Injection(ClassRegistry registry) {
 		classes = registry;
@@ -59,6 +63,15 @@ public class Injection {
 		addStringClassMapper(new CharacterStringClassMapper());
 	}
 
+	public Iterable<TokenSinkWrapper> getTokenSinkWrappers() {
+		return sinkWrappers;
+	}
+
+	public void addTokenSinkWrapper(TokenSinkWrapper wrapper) {
+		if(wrapper != null)
+			sinkWrappers.add(wrapper);
+	}
+
 	public ObjectGraphDescriptor readDescription(Reader stream) throws IOException, ObjectDescriptionException {
 		return readDescription(stream, null);
 	}
@@ -70,7 +83,10 @@ public class Injection {
 		for(StringClassMapper mapper : stringClassMappers)
 			builder.addStringClassMapper(mapper);
 		Parser parser = new Parser(builder);
-		Lexer lexer = new Lexer(parser);
+		TokenSink mbparser = parser;
+		for(TokenSinkWrapper wrapper : sinkWrappers)
+			mbparser = wrapper.wrapTokenSink(mbparser);
+		Lexer lexer = new Lexer(mbparser);
 		lexer.setFile(file);
 		lexer.pushStream(stream);
 		return new ObjectGraphDescriptor(builder);

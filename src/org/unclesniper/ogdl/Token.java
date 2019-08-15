@@ -23,7 +23,8 @@ public class Token implements Location {
 		LEFT_ROUND,
 		RIGHT_ROUND,
 		TRUE,
-		FALSE;
+		FALSE,
+		DIRECTIVE;
 
 		public boolean isOneOf(int mask) {
 			return ((1 << ordinal()) & mask) != 0;
