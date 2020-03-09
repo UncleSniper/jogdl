@@ -9,11 +9,14 @@ public class Property {
 
 		public final Accessor accessor;
 
-		public final StringClassMapper mapper;
+		public final StringClassMapper keyMapper;
 
-		public MappingAccessor(Accessor accessor, StringClassMapper mapper) {
+		public final StringClassMapper valueMapper;
+
+		public MappingAccessor(Accessor accessor, StringClassMapper keyMapper, StringClassMapper valueMapper) {
 			this.accessor = accessor;
-			this.mapper = mapper;
+			this.keyMapper = keyMapper;
+			this.valueMapper = valueMapper;
 		}
 
 	}
@@ -155,13 +158,97 @@ public class Property {
 			for(StringClassMapper mapper : stringClassMappers) {
 				if(mapper.canDeserializeObject(value, accessor.getValueType(), loader)) {
 					if(ma == null)
-						ma = new MappingAccessor(accessor, mapper);
+						ma = new MappingAccessor(accessor, null, mapper);
 					else
 						return null;
 				}
 			}
 		}
 		return ma;
+	}
+
+	public MappingAccessor findMappingPutterForBinding(String keySpec, Object key, String valueSpec, Object value,
+			Iterable<StringClassMapper> stringClassMappers, ClassLoader loader) {
+		Accessor bestAccessor = null;
+		Class<?> bestKeyParam = null, bestValueParam = null;
+		StringClassMapper bestKeyMapper = null, bestValueMapper = null;
+		Class<?> keyType = key == null ? null : key.getClass();
+		Class<?> valueType = value == null ? null : value.getClass();
+		for(Accessor a : putters) {
+			Class<?> rawKeyParam = a.getKeyType();
+			Class<?> keyParam = ClassUtils.getCompoundTypeOf(rawKeyParam);
+			Class<?> rawValueParam = a.getValueType();
+			Class<?> valueParam = ClassUtils.getCompoundTypeOf(rawValueParam);
+			StringClassMapper keyMapper = null, valueMapper = null;
+			if(keyType == null) {
+				if(rawKeyParam.isPrimitive())
+					continue;
+			}
+			else {
+				if(!ClassUtils.isExtendedAssignable(keyParam, keyType)) {
+					if(keySpec == null)
+						continue;
+					for(StringClassMapper mapper : stringClassMappers) {
+						if(mapper.canDeserializeObject(keySpec, rawKeyParam, loader)) {
+							if(keyMapper == null)
+								keyMapper = mapper;
+							else {
+								keyMapper = null;
+								break;
+							}
+						}
+					}
+					if(keyMapper == null)
+						continue;
+				}
+			}
+			if(valueType == null) {
+				if(rawValueParam.isPrimitive())
+					continue;
+			}
+			else {
+				if(!ClassUtils.isExtendedAssignable(valueParam, valueType)) {
+					if(valueSpec == null)
+						continue;
+					for(StringClassMapper mapper : stringClassMappers) {
+						if(mapper.canDeserializeObject(valueSpec, rawValueParam, loader)) {
+							if(valueMapper == null)
+								valueMapper = mapper;
+							else {
+								valueMapper = null;
+								break;
+							}
+						}
+					}
+					if(valueMapper == null)
+						continue;
+				}
+			}
+			boolean better = true;
+			if(bestAccessor != null) {
+				boolean keyFromBest = ClassUtils.isExtendedAssignable(keyParam, bestKeyParam);
+				boolean keyFromThis = ClassUtils.isExtendedAssignable(bestKeyParam, keyParam);
+				if(bestKeyMapper != null && keyMapper == null)
+					better = true;
+				else if(keyFromThis && !keyFromBest)
+					better = true;
+				else if(keyFromThis == keyFromBest && (bestKeyMapper == null) == (keyMapper == null)) {
+					boolean valueFromBest = ClassUtils.isExtendedAssignable(valueParam, bestValueParam);
+					boolean valueFromThis = ClassUtils.isExtendedAssignable(bestValueParam, valueParam);
+					better = (bestValueMapper != null && valueMapper == null) || (valueFromThis && !valueFromBest);
+				}
+				else
+					better = false;
+			}
+			if(better) {
+				bestAccessor = a;
+				bestKeyParam = keyMapper == null ? keyParam : null;
+				bestKeyMapper = keyMapper;
+				bestValueParam = valueMapper == null ? valueParam : null;
+				bestValueMapper = valueMapper;
+			}
+		}
+		return bestAccessor == null ? null : new MappingAccessor(bestAccessor, bestKeyMapper, bestValueMapper);
 	}
 
 	public static String minisculize(String name) {

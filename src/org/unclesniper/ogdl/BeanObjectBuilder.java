@@ -515,20 +515,45 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 			default:
 				throw new AssertionError("Unrecognized accessor type: " + access.name());
 		}
-		if(a == null && value != null && value.getClass().equals(String.class)) {
-			Property.MappingAccessor ma = null;
-			String specifier = (String)value;
-			switch(access) {
-				case SETTER:
-					ma = property.findMappingSetterForValue(specifier, info.stringClassMappers, info.loader);
-					break;
-				case ADDER:
-					ma = property.findMappingAdderForValue(specifier, info.stringClassMappers, info.loader);
-					break;
+		boolean tryMapKey, tryMapValue;
+		if(a != null)
+			tryMapKey = tryMapValue = false;
+		else {
+			tryMapKey = access == Accessor.Type.PUTTER && key != null && key.getClass().equals(String.class);
+			tryMapValue = value != null && value.getClass().equals(String.class);
+		}
+		if(access != Accessor.Type.PUTTER) {
+			if(tryMapValue) {
+				Property.MappingAccessor ma = null;
+				String specifier = (String)value;
+				switch(access) {
+					case SETTER:
+						ma = property.findMappingSetterForValue(specifier, info.stringClassMappers, info.loader);
+						break;
+					case ADDER:
+						ma = property.findMappingAdderForValue(specifier, info.stringClassMappers, info.loader);
+						break;
+				}
+				if(ma != null) {
+					a = ma.accessor;
+					value = ma.valueMapper.deserializeObject(specifier, a.getValueType(), info.loader);
+				}
 			}
-			if(ma != null) {
-				a = ma.accessor;
-				value = ma.mapper.deserializeObject(specifier, a.getValueType(), info.loader);
+		}
+		else {
+			if(tryMapKey || tryMapValue) {
+				Property.MappingAccessor ma = null;
+				String keySpec = tryMapKey ? (String)key : null;
+				String valueSpec = tryMapValue ? (String)value : null;
+				ma = property.findMappingPutterForBinding(keySpec, key, valueSpec, value,
+						info.stringClassMappers, info.loader);
+				if(ma != null) {
+					a = ma.accessor;
+					if(ma.keyMapper != null)
+						key = ma.keyMapper.deserializeObject(keySpec, a.getKeyType(), info.loader);
+					if(ma.valueMapper != null)
+						value = ma.valueMapper.deserializeObject(valueSpec, a.getValueType(), info.loader);
+				}
 			}
 		}
 		if(a == null)
