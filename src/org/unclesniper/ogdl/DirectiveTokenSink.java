@@ -10,13 +10,37 @@ import java.net.MalformedURLException;
 
 public class DirectiveTokenSink implements TokenSink {
 
+	public interface URLResolver {
+
+		InputStream resolveURL(String text, int startIndex) throws IOException;
+
+	}
+
 	public static class Wrapper implements TokenSinkWrapper {
+
+		private final Map<String, URLResolver> includeURLResolvers = new HashMap<String, URLResolver>();
 
 		public Wrapper() {}
 
+		public URLResolver getIncludeURLResolver(String schema) {
+			return includeURLResolvers.get(schema);
+		}
+
+		public void setIncludeURLResolver(String schema, URLResolver resolver) {
+			if(schema == null)
+				return;
+			if(resolver == null)
+				includeURLResolvers.remove(schema);
+			else
+				includeURLResolvers.put(schema, resolver);
+		}
+
 		@Override
 		public TokenSink wrapTokenSink(TokenSink sink) {
-			return new DirectiveTokenSink(sink);
+			DirectiveTokenSink dts = new DirectiveTokenSink(sink);
+			for(Map.Entry<String, URLResolver> entry : includeURLResolvers.entrySet())
+				dts.setIncludeURLResolver(entry.getKey(), entry.getValue());
+			return dts;
 		}
 
 	}
@@ -39,6 +63,8 @@ public class DirectiveTokenSink implements TokenSink {
 
 	private State state = State.NONE;
 
+	private final Map<String, URLResolver> includeURLResolvers = new HashMap<String, URLResolver>();
+
 	public DirectiveTokenSink(TokenSink slave) {
 		this.slave = slave;
 	}
@@ -49,6 +75,19 @@ public class DirectiveTokenSink implements TokenSink {
 
 	public void setSlave(TokenSink slave) {
 		this.slave = slave;
+	}
+
+	public URLResolver getIncludeURLResolver(String schema) {
+		return includeURLResolvers.get(schema);
+	}
+
+	public void setIncludeURLResolver(String schema, URLResolver resolver) {
+		if(schema == null)
+			return;
+		if(resolver == null)
+			includeURLResolvers.remove(schema);
+		else
+			includeURLResolvers.put(schema, resolver);
 	}
 
 	@Override
@@ -79,16 +118,39 @@ public class DirectiveTokenSink implements TokenSink {
 	}
 
 	private void doIncludeURL(Token token) throws SyntaxException, ObjectConstructionException {
+		String utext = token.getText();
+		int pos = utext.indexOf(':');
+		if(pos > 0) {
+			URLResolver resolver = includeURLResolvers.get(utext.substring(0, pos));
+			if(resolver != null) {
+				try {
+					includeStream(resolver.resolveURL(utext, pos + 1), token);
+					return;
+				}
+				catch(IOException ioe) {
+					throw new DescriptorInclusionException(utext, token, ioe);
+				}
+			}
+		}
 		URL url;
 		try {
-			url = new URL(token.getText());
+			url = new URL(utext);
 		}
 		catch(MalformedURLException mue) {
 			throw new SyntaxException("valid URL", token);
 		}
-		Lexer lexer = new Lexer(slave);
-		lexer.setFile(token.getText());
 		try(InputStream is = url.openStream()) {
+			includeStream(is, token);
+		}
+		catch(IOException ioe) {
+			throw new DescriptorInclusionException(utext, token, ioe);
+		}
+	}
+
+	private void includeStream(InputStream stream, Token token) throws SyntaxException, ObjectConstructionException {
+		try(InputStream is = stream) {
+			Lexer lexer = new Lexer(slave);
+			lexer.setFile(token.getText());
 			InputStreamReader isr = new InputStreamReader(is, "UTF-8");
 			lexer.pushStream(isr);
 		}
