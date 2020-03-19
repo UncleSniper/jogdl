@@ -43,6 +43,8 @@ public class Lexer implements Location {
 
 	private int digits;
 
+	private boolean emitEOF = true;
+
 	public Lexer(TokenSink sink) {
 		this.sink = sink;
 	}
@@ -69,6 +71,14 @@ public class Lexer implements Location {
 
 	public void setTokenSink(TokenSink sink) {
 		this.sink = sink;
+	}
+
+	public boolean isEmitEOF() {
+		return emitEOF;
+	}
+
+	public void setEmitEOF(boolean emitEOF) {
+		this.emitEOF = emitEOF;
 	}
 
 	public void pushChars(String data) throws LexicalException, SyntaxException, ObjectConstructionException {
@@ -442,7 +452,8 @@ public class Lexer implements Location {
 			default:
 				throw new AssertionError("Unrecognized lexer state: " + state.name());
 		}
-		sink.feedToken(new Token(file, line, null, null));
+		if(emitEOF)
+			sink.feedToken(new Token(file, line, null, null));
 	}
 
 	public void pushStream(Reader stream) throws IOException, LexicalException, SyntaxException,

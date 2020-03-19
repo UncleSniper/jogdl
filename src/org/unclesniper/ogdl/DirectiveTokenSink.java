@@ -151,6 +151,7 @@ public class DirectiveTokenSink implements TokenSink {
 		try(InputStream is = stream) {
 			Lexer lexer = new Lexer(slave);
 			lexer.setFile(token.getText());
+			lexer.setEmitEOF(false);
 			InputStreamReader isr = new InputStreamReader(is, "UTF-8");
 			lexer.pushStream(isr);
 		}
