@@ -388,7 +388,7 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 		states.addLast(State.ADD_ARGUMENT);
 	}
 
-	public void endConstruction(Location location) throws ObjectCreationException {
+	public void endConstruction(Location location) throws ObjectCreationException, PropertyInjectionException {
 		if(states.isEmpty() || states.getLast() != State.ADD_ARGUMENT)
 			throw new IllegalStateException("Call to endConstruction() not within scope of newObject()");
 		states.removeLast();
@@ -415,8 +415,29 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 			throw new ObjectCreationException(type.getSubject().getName(),
 					"Failed to instantiate class '" + type.getSubject().getName(), location, ite.getCause());
 		}
+		injectDefinitionLocation(obj, type, location);
 		objects.addLast(obj);
 		compoundObjects.add(obj);
+	}
+
+	private void injectDefinitionLocation(Object base, ClassInfo type, Location location)
+			throws PropertyInjectionException {
+		if(location == null)
+			return;
+		Method setter = type.getDefinitionLocationSetter();
+		if(setter == null)
+			return;
+		try {
+			setter.invoke(base, location.getFile(), location.getLine());
+		}
+		catch(IllegalAccessException iae) {
+			throw new PropertyInjectionException(base.getClass(), type.getDefinitionLocationPropertyName(),
+					location, iae);
+		}
+		catch(InvocationTargetException ite) {
+			throw new PropertyInjectionException(base.getClass(), type.getDefinitionLocationPropertyName(),
+					location, ite);
+		}
 	}
 
 	public void setProperty(String property, Location location) throws NoSuchPropertyException {

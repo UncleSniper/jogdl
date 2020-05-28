@@ -16,6 +16,10 @@ public class ClassInfo {
 
 	private String coalescingLoaderPropertyName;
 
+	private Method definitionLocationSetter;
+
+	private String definitionLocationPropertyName;
+
 	public ClassInfo(Class<?> clazz) {
 		this.clazz = clazz;
 		buildProperties();
@@ -39,6 +43,14 @@ public class ClassInfo {
 
 	public String getCoalescingLoaderPropertyName() {
 		return coalescingLoaderPropertyName;
+	}
+
+	public Method getDefinitionLocationSetter() {
+		return definitionLocationSetter;
+	}
+
+	public String getDefinitionLocationPropertyName() {
+		return definitionLocationPropertyName;
 	}
 
 	private void buildProperties() {
@@ -72,8 +84,14 @@ public class ClassInfo {
 					}
 					else if(isAdder)
 						prop.addAdder(new Accessor(prop, m, params[0]));
-					else
+					else {
 						prop.addPutter(new Accessor(prop, m, params[0], params[1]));
+						if(params[0].equals(String.class) && params[1].equals(Integer.TYPE)
+								&& m.getAnnotation(ObjectDefinitionLocationProperty.class) != null) {
+							definitionLocationSetter = m;
+							definitionLocationPropertyName = propName;
+						}
+					}
 				}
 			}
 		}
