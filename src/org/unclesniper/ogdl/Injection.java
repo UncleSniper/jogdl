@@ -111,7 +111,7 @@ public class Injection {
 			throws IOException, ObjectDescriptionException {
 		FileInputStream fis = new FileInputStream(file);
 		try {
-			return readDescription(fis, charset, file.getName());
+			return readDescription(fis, charset, file.getPath());
 		}
 		finally {
 			fis.close();
