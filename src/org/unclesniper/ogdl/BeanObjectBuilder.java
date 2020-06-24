@@ -167,6 +167,19 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 
 	}
 
+	private static class Alias {
+
+		final String oldName;
+
+		final Location location;
+
+		public Alias(String oldName, Location location) {
+			this.oldName = oldName;
+			this.location = location;
+		}
+
+	}
+
 	private static final Object[] OBJECT_ARRAY_TEMPLATE = new Object[0];
 
 	private static final URL[] URL_ARRAY_TEMPLATE = new URL[0];
@@ -206,6 +219,8 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 	private ClassLoader coalescingLoader;
 
 	private final List<Object> compoundObjects = new LinkedList<Object>();
+
+	private final Map<String, Alias> aliases = new HashMap<String, Alias>();
 
 	public BeanObjectBuilder(ClassRegistry classes) {
 		this.classes = classes;
@@ -375,9 +390,13 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 	}
 
 	public void newObject(TypeSpecifier type) throws ObjectCreationException {
+		String jname = type.getJavaneseName();
+		Alias alias = aliases.get(jname);
+		if(alias != null)
+			jname = alias.oldName;
 		Class<?> clazz;
 		try {
-			clazz = getCoalescingLoader().loadClass(type.getJavaneseName());
+			clazz = getCoalescingLoader().loadClass(jname);
 		}
 		catch(ClassNotFoundException cnfe) {
 			throw new ObjectCreationException(type.getName(), type.getLocation(), cnfe);
@@ -642,6 +661,18 @@ public class BeanObjectBuilder implements ObjectBuilder, ObjectGraphDocument, Co
 		ariadne.remove(name);
 		constants.put(name, object);
 		return object;
+	}
+
+	public void defineAlias(String oldName, String newName, Location location) throws ConflictingAliasesException {
+		if(oldName == null)
+			throw new IllegalArgumentException("Alias name cannot be null");
+		if(newName == null)
+			throw new IllegalArgumentException("Alias definition cannot be null");
+		Alias alias = aliases.get(newName);
+		if(alias == null)
+			aliases.put(newName, new Alias(oldName, location));
+		else if(!oldName.equals(alias.oldName))
+			throw new ConflictingAliasesException(newName, alias.oldName, alias.location, oldName, location);
 	}
 
 }

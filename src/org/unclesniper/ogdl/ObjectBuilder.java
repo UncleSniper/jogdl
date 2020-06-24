@@ -26,4 +26,6 @@ public interface ObjectBuilder {
 
 	void endObject(Location location) throws ObjectConstructionException;
 
+	void defineAlias(String oldName, String newName, Location location) throws ObjectConstructionException;
+
 }

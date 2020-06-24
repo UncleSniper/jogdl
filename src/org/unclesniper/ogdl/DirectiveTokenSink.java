@@ -36,8 +36,9 @@ public class DirectiveTokenSink implements TokenSink {
 		}
 
 		@Override
-		public TokenSink wrapTokenSink(TokenSink sink) {
-			DirectiveTokenSink dts = new DirectiveTokenSink(sink);
+		public TokenSink wrapTokenSink(TokenSink sink, ObjectBuilder target, WrapperChain chain) {
+			DirectiveTokenSink dts = new DirectiveTokenSink(sink, target, chain);
+			dts.setMyWrapper(this);
 			for(Map.Entry<String, URLResolver> entry : includeURLResolvers.entrySet())
 				dts.setIncludeURLResolver(entry.getKey(), entry.getValue());
 			return dts;
@@ -47,7 +48,11 @@ public class DirectiveTokenSink implements TokenSink {
 
 	private enum State {
 		NONE,
-		INCLUDE_URL
+		INCLUDE_URL,
+		ALIAS,
+		ALIAS_NEW_NAME,
+		ALIAS_EQUAL,
+		ALIAS_OLD_NAME
 	}
 
 	public static final TokenSinkWrapper WRAPPER = new Wrapper();
@@ -57,16 +62,31 @@ public class DirectiveTokenSink implements TokenSink {
 	static {
 		STATE_MAP = new HashMap<String, State>();
 		STATE_MAP.put("%includeURL", State.INCLUDE_URL);
+		STATE_MAP.put("%alias", State.ALIAS);
 	}
 
 	private TokenSink slave;
+
+	private ObjectBuilder target;
+
+	private TokenSinkWrapper.WrapperChain wrapperChain;
+
+	private TokenSinkWrapper myWrapper;
 
 	private State state = State.NONE;
 
 	private final Map<String, URLResolver> includeURLResolvers = new HashMap<String, URLResolver>();
 
-	public DirectiveTokenSink(TokenSink slave) {
+	private final StringBuilder buffer = new StringBuilder();
+
+	private String cachedString;
+
+	private Location cachedLocation;
+
+	public DirectiveTokenSink(TokenSink slave, ObjectBuilder target, TokenSinkWrapper.WrapperChain wrapperChain) {
 		this.slave = slave;
+		this.target = target;
+		this.wrapperChain = wrapperChain;
 	}
 
 	public TokenSink getSlave() {
@@ -75,6 +95,30 @@ public class DirectiveTokenSink implements TokenSink {
 
 	public void setSlave(TokenSink slave) {
 		this.slave = slave;
+	}
+
+	public ObjectBuilder getTarget() {
+		return target;
+	}
+
+	public void setTarget(ObjectBuilder target) {
+		this.target = target;
+	}
+
+	public TokenSinkWrapper.WrapperChain getWrapperChain() {
+		return wrapperChain;
+	}
+
+	public void setWrapperChain(TokenSinkWrapper.WrapperChain wrapperChain) {
+		this.wrapperChain = wrapperChain;
+	}
+
+	public TokenSinkWrapper getMyWrapper() {
+		return myWrapper;
+	}
+
+	public void setMyWrapper(TokenSinkWrapper myWrapper) {
+		this.myWrapper = myWrapper;
 	}
 
 	public URLResolver getIncludeURLResolver(String schema) {
@@ -105,12 +149,51 @@ public class DirectiveTokenSink implements TokenSink {
 					break;
 				}
 				state = nextState;
+				buffer.setLength(0);
 				break;
 			case INCLUDE_URL:
 				if(token.getType() != Token.Type.STRING)
 					throw new SyntaxException(Token.MASK_STRING, token);
 				state = State.NONE;
 				doIncludeURL(token);
+				break;
+			case ALIAS:
+				if(token.getType() != Token.Type.NAME)
+					throw new SyntaxException(Token.MASK_NAME, token);
+				buffer.append(token.getText());
+				state = State.ALIAS_NEW_NAME;
+				break;
+			case ALIAS_NEW_NAME:
+				switch(token.getType()) {
+					case DOT:
+						buffer.append('.');
+						state = State.ALIAS;
+						break;
+					case EQUAL:
+						cachedString = buffer.toString();
+						cachedLocation = token;
+						buffer.setLength(0);
+						state = State.ALIAS_EQUAL;
+						break;
+					default:
+						throw new SyntaxException(Token.MASK_DOT | Token.MASK_EQUAL, token);
+				}
+				break;
+			case ALIAS_EQUAL:
+				if(token.getType() != Token.Type.NAME)
+					throw new SyntaxException(Token.MASK_NAME, token);
+				buffer.append(token.getText());
+				state = State.ALIAS_OLD_NAME;
+				break;
+			case ALIAS_OLD_NAME:
+				if(token.getType() == Token.Type.DOT) {
+					buffer.append('.');
+					state = State.ALIAS_EQUAL;
+					break;
+				}
+				target.defineAlias(buffer.toString(), cachedString, cachedLocation);
+				state = State.NONE;
+				feedToken(token);
 				break;
 			default:
 				throw new AssertionError("Unrecognized directive processor state: " + state.name());
@@ -149,7 +232,10 @@ public class DirectiveTokenSink implements TokenSink {
 
 	private void includeStream(InputStream stream, Token token) throws SyntaxException, ObjectConstructionException {
 		try(InputStream is = stream) {
-			Lexer lexer = new Lexer(slave);
+			TokenSink mySlave = slave;
+			if(wrapperChain != null)
+				mySlave = wrapperChain.rewrapTokenSink(mySlave, myWrapper);
+			Lexer lexer = new Lexer(mySlave);
 			lexer.setFile(token.getText());
 			lexer.setEmitEOF(false);
 			InputStreamReader isr = new InputStreamReader(is, "UTF-8");

@@ -360,4 +360,6 @@ public class ObjectWriter implements ObjectBuilder {
 		properties.removeLast();
 	}
 
+	public void defineAlias(String oldName, String newName, Location location) {}
+
 }
