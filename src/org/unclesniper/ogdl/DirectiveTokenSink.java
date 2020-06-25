@@ -83,6 +83,8 @@ public class DirectiveTokenSink implements TokenSink {
 
 	private Location cachedLocation;
 
+	private Location directiveStartLocation;
+
 	public DirectiveTokenSink(TokenSink slave, ObjectBuilder target, TokenSinkWrapper.WrapperChain wrapperChain) {
 		this.slave = slave;
 		this.target = target;
@@ -149,6 +151,7 @@ public class DirectiveTokenSink implements TokenSink {
 					break;
 				}
 				state = nextState;
+				directiveStartLocation = token;
 				buffer.setLength(0);
 				break;
 			case INCLUDE_URL:
@@ -198,6 +201,34 @@ public class DirectiveTokenSink implements TokenSink {
 			default:
 				throw new AssertionError("Unrecognized directive processor state: " + state.name());
 		}
+	}
+
+	@Override
+	public void announceBreak() throws SyntaxException, ObjectConstructionException {
+		switch(state) {
+			case NONE:
+				break;
+			case INCLUDE_URL:
+				noBreak(Token.MASK_STRING);
+			case ALIAS:
+				noBreak(Token.MASK_NAME);
+			case ALIAS_NEW_NAME:
+				noBreak(Token.MASK_DOT | Token.MASK_EQUAL);
+			case ALIAS_EQUAL:
+				noBreak(Token.MASK_NAME);
+			case ALIAS_OLD_NAME:
+				target.defineAlias(buffer.toString(), cachedString, cachedLocation);
+				state = State.NONE;
+				break;
+			default:
+				throw new AssertionError("Unrecognized directive processor state: " + state.name());
+		}
+		slave.announceBreak();
+	}
+
+	private void noBreak(int expected) throws SyntaxException {
+		throw new SyntaxException(expected, new Token(directiveStartLocation.getFile(),
+				directiveStartLocation.getLine(), null, null));
 	}
 
 	private void doIncludeURL(Token token) throws SyntaxException, ObjectConstructionException {

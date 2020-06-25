@@ -57,6 +57,7 @@ public class Parser implements TokenSink {
 		this.builder = builder;
 	}
 
+	@Override
 	public void feedToken(Token token) throws SyntaxException, ObjectConstructionException {
 		State state = states.removeLast();
 		Token.Type type = token.getType();
@@ -407,5 +408,8 @@ public class Parser implements TokenSink {
 				throw new AssertionError("Unrecognized parser state: " + state.name());
 		}
 	}
+
+	@Override
+	public void announceBreak() {}
 
 }

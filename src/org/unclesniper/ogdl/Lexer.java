@@ -454,6 +454,7 @@ public class Lexer implements Location {
 		}
 		if(emitEOF)
 			sink.feedToken(new Token(file, line, null, null));
+		sink.announceBreak();
 	}
 
 	public void pushStream(Reader stream) throws IOException, LexicalException, SyntaxException,
