@@ -129,6 +129,9 @@ public class Token implements Location {
 					case '\\':
 						build.append("\\\\");
 						break;
+					case '"':
+						build.append("\\\"");
+						break;
 					case '\t':
 						build.append("\\t");
 						break;
