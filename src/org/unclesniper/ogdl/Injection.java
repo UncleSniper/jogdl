@@ -14,34 +14,6 @@ import java.io.InputStreamReader;
 
 public class Injection {
 
-	private class TokenSinkWrapperChain implements TokenSinkWrapper.WrapperChain {
-
-		private final ObjectBuilder target;
-
-		TokenSinkWrapperChain(ObjectBuilder target) {
-			this.target = target;
-		}
-
-		@Override
-		public TokenSink rewrapTokenSink(TokenSink sink, TokenSinkWrapper upTo) {
-			if(upTo != null) {
-				boolean found = false;
-				for(TokenSinkWrapper wrapper : sinkWrappers) {
-					if(wrapper == upTo)
-						found = true;
-					if(found)
-						sink = wrapper.wrapTokenSink(sink, target, this);
-				}
-				if(found)
-					return sink;
-			}
-			for(TokenSinkWrapper wrapper : sinkWrappers)
-				sink = wrapper.wrapTokenSink(sink, target, this);
-			return sink;
-		}
-
-	}
-
 	private ClassRegistry classes;
 
 	private ClassLoader loader;
@@ -111,7 +83,7 @@ public class Injection {
 		for(StringClassMapper mapper : stringClassMappers)
 			builder.addStringClassMapper(mapper);
 		Parser parser = new Parser(builder);
-		TokenSinkWrapperChain chain = new TokenSinkWrapperChain(builder);
+		TokenSinkWrapperChain chain = new TokenSinkWrapperChain(builder, sinkWrappers);
 		TokenSink mbparser = chain.rewrapTokenSink(parser, null);
 		Lexer lexer = new Lexer(mbparser);
 		lexer.setFile(file);
