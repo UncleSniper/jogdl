@@ -313,11 +313,11 @@ public class Lexer implements Location {
 				case HEX_CODE:
 					if(c >= 'A' && c <= 'F') {
 						++digits;
-						code = (char)(code * 16 + (c - 'A'));
+						code = (char)(code * 16 + (c - 'A' + 10));
 					}
 					else if(c >= 'a' && c <= 'f') {
 						++digits;
-						code = (char)(code * 16 + (c - 'a'));
+						code = (char)(code * 16 + (c - 'a' + 10));
 					}
 					else if(c >= '0' && c <= '9') {
 						++digits;
